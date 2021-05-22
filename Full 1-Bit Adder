@@ -1,0 +1,17 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity FullAdd is port ( 
+A, B, Cin: in std_logic; 
+Sum, Cout: out std_logic 
+); 
+end FullAdd;
+
+architecture behavioral of FullAdd is
+begin
+  fulladd_proc : process (A,B,Cin) is
+   begin
+    Sum <= Cin XOR (A XOR B);
+    Cout <= (A AND B) OR (Cin AND (A XOR B));
+   end process fulladd_proc;
+end behavioral;
