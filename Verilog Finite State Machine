@@ -1,0 +1,49 @@
+module FSM(
+  input In1,
+  input RST,
+  input CLK, 
+  output reg Out1
+);
+
+parameter StateA = 0, StateB = 1, StateC = 2;
+reg state, nextstate;
+
+always @ (state, In1)
+	begin : next_state_logic
+		case(state)
+			StateA : begin
+					if(In1) nextstate = StateB;
+					else nextstate = StateA;
+				 end
+
+			StateB : begin
+					if(In1) nextstate = StateB;
+					else nextstate = StateC;
+				 end
+
+			StateC : begin
+					if(In1) nextstate = StateA;
+					else nextstate = StateC;
+				 end
+
+			default: nextstate = StateA;
+
+		endcase
+end
+
+always @ (posedge CLK or posedge RST)
+	begin: register_generation
+		if(RST) state = state;
+		else state = nextstate;
+	end
+
+always @ (state)
+	begin: output_logic
+		case(state)
+			StateA: Out1 = 0;
+			StateB: Out1 = 0;
+			StateC: Out1 = 1;
+			default: Out1 = 0;
+		endcase
+	end
+endmodule
