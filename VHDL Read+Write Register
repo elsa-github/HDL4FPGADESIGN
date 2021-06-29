@@ -1,0 +1,88 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity FIFO8x9 is
+   port(
+      clk, rst:		in std_logic;
+      RdPtrClr, WrPtrClr: in std_logic;    
+      RdInc, WrInc:	in std_logic;
+      DataIn:	 in std_logic_vector(8 downto 0);
+      DataOut: out std_logic_vector(8 downto 0);
+      rden, wren: in std_logic
+	);
+end entity FIFO8x9;
+
+architecture RTL of FIFO8x9 is
+	--signal declarations
+	type fifo_array is array(7 downto 0) of std_logic_vector(8 downto 0);
+	signal fifo:  fifo_array;
+	signal wrptr, rdptr: unsigned(2 downto 0);
+	signal en: std_logic_vector(7 downto 0);
+	signal dmuxout: std_logic_vector(8 downto 0);
+
+begin
+
+	--FIFO Register Array
+	
+	reg_array : process (rst, clk)
+	begin
+		if (rst = '1') then 
+			for i in 7 downto 0 loop
+			fifo(i) <= (others => '0');
+			end loop;
+			rdptr <= (others => '0');
+			wrptr <= (others => '0'); 
+		elsif (clk = '1') then 
+			if( wren = '1') then
+				for i in 7 downto 0 loop
+					if en(i) = '1' then  fifo(i) <= DataIn;
+					else fifo(i) <= fifo(i);
+					end if;
+				end loop;
+			end if;
+		end if;
+	end process reg_array;
+
+	--Read Pointer
+		read_pointer: process(clk, rdinc, rdptrclr)
+		begin
+			if (clk = '1' and rdinc = '1') then rdptr <= rdptr + 1;
+			end if;
+			if (clk = '1' and rdptrclr = '1') then rdptr <= (others => '0');
+			end if;
+		end process read_pointer; 
+
+	--Write Pointer
+		write_pointer: process(clk, wrinc)
+		begin
+			if (wrinc = '1' and clk = '1') then wrptr <= wrptr + 1;
+			end if;
+			if (clk = '1' and wrptrclr = '1') then wrptr <= (others => '0');
+			end if;
+		end process write_pointer;
+
+	--DataOut Multiplexor
+
+		dmuxout <= fifo(0) when (rdptr = "000") else 
+			   fifo(1) when (rdptr = "001") else
+			   fifo(2) when (rdptr = "010") else
+			   fifo(3) when (rdptr = "011") else
+			   fifo(4) when (rdptr = "100") else
+			   fifo(5) when (rdptr = "101") else
+			   fifo(6) when (rdptr = "110") else fifo(7);
+
+	--Enable Multiplexor
+
+		en <= "00000000" when (wrptr = "000") else
+		      "00000010" when (wrptr = "001") else
+		      "00000100" when (wrptr = "010") else
+		      "00001000" when (wrptr = "011") else
+		      "00010000" when (wrptr = "100") else
+		      "00100000" when (wrptr = "101") else
+		      "01000000" when (wrptr = "110") else "10000000";
+	
+	--Formal Output
+		DataOut <= dmuxout when (rden = '1') else "ZZZZZZZZZ";
+			   
+end architecture RTL;
